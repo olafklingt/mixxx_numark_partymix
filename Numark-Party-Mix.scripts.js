@@ -1,19 +1,14 @@
-// todo:
-// fork anglefive
-// set origin to fork
-// copy my version
-// ln -S to files
-// create work branch
-
 // variation:
-// use bass for filter hp/lp effect
-// use trebble for mid
-// use jog weel for rate_perm_up_small
-// use browse button for load to stopped deck
-// use load button for shift
-// use pitch fader for deck3+4 volume 
-// use scratch for deck3+4 headphone
+// -use bass for filter hp/lp effect
+// !use gain for treb
+// !use trebble for mid
+// !use jog weel for rate_perm_up_small
+// !use browse button for load to stopped deck
+// !use pitch fader for deck3+4 volume 
+// !use scratch for deck3+4 headphone
 //
+// use load button to load to deck3+4?
+// use load button to shift?
 // use bright leds to indicate shift
 // use load button 1 for shift1:
 // -> deck 3+4
@@ -181,55 +176,6 @@ NumarkPartyMix.Deck = function (number) {
         midi: [0x90 + channel, 0x02],
     });
 
-    this.headphoneButton = function (channel, control, value, status, group) {
-        engine.setValue(group, 'pfl', value ? 1 : 0);
-    };
-
-
-    // this.headphoneButton = new components.Button({
-    //     type: components.Button.prototype.types.toggle,
-    //     midi: [0x90 + channel, 0x1B],
-    //     key: "pfl"
-    // });
-
-    this.loadButton = new components.Button({
-        inKey: "LoadSelectedTrack"
-    });
-
-    this.volume = new components.Pot({
-        inKey: "volume"
-    });
-
-    this.gain = new components.Pot({
-        inKey: "pregain"
-    });
-
-    this.treble = new components.Pot({
-        group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
-        inKey: "parameter3"
-    });
-
-    // no midpot want to reuse gain for this todo
-    // this.mid = new components.Pot({
-    //     group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
-    //     inKey: "parameter2"
-    // });
-
-    this.bass = new components.Pot({
-        group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
-        inKey: "parameter1"
-    });
-
-    // this.filter = new components.Pot({
-    //     group: "[QuickEffectRack1_" + this.currentDeck + "]",
-    //     inKey: "super1"
-    // });
-
-    this.pitch = new components.Pot({
-        inKey: "rate",
-        invert: false
-    });
-
     this.padSection = new NumarkPartyMix.PadSection(number);
 
     // i want to use load for this
@@ -245,22 +191,22 @@ NumarkPartyMix.Deck = function (number) {
     //     }
     // });
 
-    this.scratchToggle = new components.Button({
-        midi: [0x90 + channel, 0x07],
-        input: function (channel, control, value,status, group) {
-            if (!this.isPress(channel, control, value)) {
-                return;
-            }
-            deck.scratchModeEnabled = !deck.scratchModeEnabled;
-            if(deck.scratchModeEnabled){
-                engine.scratchEnable(script.deckFromGroup(group), NumarkPartyMix.jogScratchSensitivity, 33+1/3, NumarkPartyMix.jogScratchAlpha, NumarkPartyMix.jogScratchBeta, true);
-            }else{
-                engine.scratchDisable(script.deckFromGroup(group));
-            }
-            // change the scratch mode status light
-            this.send(deck.scratchModeEnabled ? this.on : this.off);
-        },
-    });
+    // this.scratchToggle = new components.Button({
+    //     midi: [0x90 + channel, 0x07],
+    //     input: function (channel, control, value,status, group) {
+    //         if (!this.isPress(channel, control, value)) {
+    //             return;
+    //         }
+    //         deck.scratchModeEnabled = !deck.scratchModeEnabled;
+    //         if(deck.scratchModeEnabled){
+    //             engine.scratchEnable(script.deckFromGroup(group), NumarkPartyMix.jogScratchSensitivity, 33+1/3, NumarkPartyMix.jogScratchAlpha, NumarkPartyMix.jogScratchBeta, true);
+    //         }else{
+    //             engine.scratchDisable(script.deckFromGroup(group));
+    //         }
+    //         // change the scratch mode status light
+    //         this.send(deck.scratchModeEnabled ? this.on : this.off);
+    //     },
+    // });
 
     this.reconnectComponents(function (component) {
         if (component.group === undefined) {
@@ -469,15 +415,34 @@ NumarkPartyMix.Browse = function () {
     });
 
     this.knobButton = new components.Button({
-        group: "[Library]",
-        // shift: function () {
-        //     this.inKey = "GoToItem";
-        // },
-        // unshift: function () {
-        //     this.inKey = "MoveFocusForward";
-        // }
-        inKey: "MoveFocusForward"
+        midi: [0x9F, 0x00],
+        // inKey: "LoadSelectedTrack",
+        input: function (channel, control, value,status, group) {
+            print("LoadSelectedTrack1");
+            print(engine.getValue("[Channel1]","play"));
+            print("LoadSelectedTrack2");
+            print(engine.getValue("[Channel2]","play"));
+            if(!engine.getValue("[Channel1]","play")){
+                engine.setValue("[Channel1]", 'LoadSelectedTrack', 1);
+            } else if (!engine.getValue("[Channel2]","play")){
+                engine.setValue("[Channel2]", 'LoadSelectedTrack', 1);
+            } else {
+                print("for now only load into deck 1 and 2")
+            }
+        }
     });
+
+
+    // this.knobButton = new components.Button({
+    //     group: "[Library]",
+    //     // shift: function () {
+    //     //     this.inKey = "GoToItem";
+    //     // },
+    //     // unshift: function () {
+    //     //     this.inKey = "MoveFocusForward";
+    //     // }
+    //     inKey: "MoveFocusForward"
+    // });
 };
 NumarkPartyMix.Browse.prototype = new components.ComponentContainer();
 
@@ -496,6 +461,92 @@ NumarkPartyMix.Gains = function () {
         group: "[Master]",
         inKey: "headMix"
     });
+
+    // this.gain = new components.Pot({
+    //     inKey: "pregain"
+    // });
+
+    this.headphoneButton = function (channel, control, value, status, group) {
+        engine.setValue(group, 'pfl', value ? 1 : 0);
+    };
+
+    this.scratchAsPfl3 = new components.Button({
+        type: components.Button.prototype.types.toggle,
+        midi: [0x90, 0x07],
+        group: "[Channel3]",
+        key: 'pfl',
+    });
+    this.scratchAsPfl4 = new components.Button({
+        type: components.Button.prototype.types.toggle,
+        midi: [0x91, 0x07],
+        group: "[Channel4]",
+        key: 'pfl',
+    });
+
+    this.volume1 = new components.Pot({
+        group: "[Channel1]",
+        inKey: "volume"
+    });
+
+    // reuse gain for treble
+    this.treble1 = new components.Pot({
+        group: "[EqualizerRack1_[Channel1]_Effect1]",
+        inKey: "parameter3"
+    });
+
+    // reuse treble for mid
+    this.mid1 = new components.Pot({
+        group: "[EqualizerRack1_[Channel1]_Effect1]",
+        inKey: "parameter2"
+    });
+
+    this.bass1 = new components.Pot({
+        group: "[EqualizerRack1_[Channel1]_Effect1]",
+        inKey: "parameter1"
+    });
+
+    this.volume2 = new components.Pot({
+        group: "[Channel2]",
+        inKey: "volume"
+    });
+
+    // reuse gain for treble
+    this.treble2 = new components.Pot({
+        group: "[EqualizerRack1_[Channel2]_Effect1]",
+        inKey: "parameter3"
+    });
+
+    // reuse treble for mid
+    this.mid2 = new components.Pot({
+        group: "[EqualizerRack1_[Channel2]_Effect1]",
+        inKey: "parameter2"
+    });
+
+    this.bass2 = new components.Pot({
+        group: "[EqualizerRack1_[Channel2]_Effect1]",
+        inKey: "parameter1"
+    });
+
+    this.volume3 = new components.Pot({
+        group: "[Channel3]",
+        inKey: "volume"
+    });
+
+    this.volume4 = new components.Pot({
+        group: "[Channel4]",
+        inKey: "volume"
+    });
+
+    // this.filter = new components.Pot({
+    //     group: "[QuickEffectRack1_" + this.currentDeck + "]",
+    //     inKey: "super1"
+    // });
+
+    // this.pitch = new components.Pot({
+    //     inKey: "rate",
+    //     invert: false
+    // });
+
 };
 NumarkPartyMix.Gains.prototype = new components.ComponentContainer();
 
@@ -504,18 +555,18 @@ NumarkPartyMix.wheelTurn = function (channel, control, value, status, group) {
     if (value >= 64) {
         // correct the value if going backwards
         newValue -= 128;
-        // engine.setValue(group, "rate_perm_down_small",1)
+        engine.setValue(group, "rate_perm_down_small",1)
     } else {
-        // engine.setValue(group, "rate_perm_up_small",1)
+        engine.setValue(group, "rate_perm_up_small",1)
     }
 
-    print(script.deckFromGroup(group));
-    if (NumarkPartyMix.deck[channel].scratchModeEnabled && script.deckFromGroup(group)) {
-        // scratch
-        engine.scratchTick(script.deckFromGroup(group), newValue); // Scratch!
-    } else {
-        // jog
-        print(newValue);
-        engine.setValue(group, "jog", newValue / NumarkPartyMix.jogPitchSensitivity);
-    }
+    // print(script.deckFromGroup(group));
+    // if (NumarkPartyMix.deck[channel].scratchModeEnabled && script.deckFromGroup(group)) {
+    //     // scratch
+    //     engine.scratchTick(script.deckFromGroup(group), newValue); // Scratch!
+    // } else {
+    //     // jog
+    //     print(newValue);
+    //     engine.setValue(group, "jog", newValue / NumarkPartyMix.jogPitchSensitivity);
+    // }
 };

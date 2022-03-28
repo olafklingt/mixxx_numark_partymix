@@ -57,7 +57,7 @@
       <!-- PFL buttons (press) -->
       <control>
         <group>[Channel1]</group>
-        <key>NumarkPartyMix.deck[0].headphoneButton</key>
+        <key>NumarkPartyMix.gains.headphoneButton</key>
         <status>0x90</status>
         <midino>0x1B</midino>
         <options>
@@ -66,7 +66,7 @@
       </control>
       <control>
         <group>[Channel2]</group>
-        <key>NumarkPartyMix.deck[1].headphoneButton</key>
+        <key>NumarkPartyMix.gains.headphoneButton</key>
         <status>0x91</status>
         <midino>0x1B</midino>
         <options>
@@ -76,7 +76,7 @@
       <!-- PFL buttons (release) -->
       <control>
         <group>[Channel1]</group>
-        <key>NumarkPartyMix.deck[0].headphoneButton</key>
+        <key>NumarkPartyMix.gains.headphoneButton</key>
         <status>0x80</status>
         <midino>0x1B</midino>
         <options>
@@ -85,7 +85,7 @@
       </control>
       <control>
         <group>[Channel2]</group>
-        <key>NumarkPartyMix.deck[1].headphoneButton</key>
+        <key>NumarkPartyMix.gains.headphoneButton</key>
         <status>0x81</status>
         <midino>0x1B</midino>
         <options>
@@ -93,7 +93,7 @@
         </options>
       </control>
       <!-- Gain -->
-      <control>
+      <!-- <control>
         <group>[Channel1]</group>
         <key>NumarkPartyMix.deck[0].gain.input</key>
         <status>0xB0</status>
@@ -110,29 +110,32 @@
         <options>
           <script-binding />
         </options>
-      </control>
+      </control> -->
       <!-- EQ -->
       <control>
         <group>[EqualizerRack1_[Channel1]_Effect1]</group>
-        <key>NumarkPartyMix.deck[0].treble.input</key>
+        <!-- <key>parameter3</key> -->
+        <key>NumarkPartyMix.gains.treble1.input</key>
         <status>0xB0</status>
-        <midino>0x18</midino>
+        <midino>0x17</midino>
         <options>
           <script-binding />
         </options>
       </control>
       <control>
         <group>[EqualizerRack1_[Channel2]_Effect1]</group>
-        <key>NumarkPartyMix.deck[1].treble.input</key>
+        <!-- <key>parameter2</key> -->
+        <key>NumarkPartyMix.gains.treble2.input</key>
         <status>0xB1</status>
-        <midino>0x18</midino>
+        <midino>0x17</midino>
         <options>
           <script-binding />
         </options>
       </control>
-      <!-- <control>
+      <control>
         <group>[EqualizerRack1_[Channel1]_Effect1]</group>
-        <key>NumarkPartyMix.deck[0].mid.input</key>
+        <!-- <key>parameter1</key> -->
+        <key>NumarkPartyMix.gains.mid1.input</key>
         <status>0xB0</status>
         <midino>0x18</midino>
         <options>
@@ -141,16 +144,18 @@
       </control>
       <control>
         <group>[EqualizerRack1_[Channel2]_Effect1]</group>
-        <key>NumarkPartyMix.deck[1].mid.input</key>
+        <!-- <key>parameter3</key> -->
+        <key>NumarkPartyMix.gains.mid2.input</key>
         <status>0xB1</status>
         <midino>0x18</midino>
         <options>
         <script-binding/>
         </options>
-      </control> -->
+      </control>
       <control>
         <group>[EqualizerRack1_[Channel1]_Effect1]</group>
-        <key>NumarkPartyMix.deck[0].bass.input</key>
+        <!-- <key>parameter2</key> -->
+        <key>NumarkPartyMix.gains.bass1.input</key>
         <status>0xB0</status>
         <midino>0x19</midino>
         <options>
@@ -159,7 +164,8 @@
       </control>
       <control>
         <group>[EqualizerRack1_[Channel2]_Effect1]</group>
-        <key>NumarkPartyMix.deck[1].bass.input</key>
+        <!-- <key>parameter1</key> -->
+        <key>NumarkPartyMix.gains.bass2.input</key>
         <status>0xB1</status>
         <midino>0x19</midino>
         <options>
@@ -169,7 +175,8 @@
       <!-- Channel volume -->
       <control>
         <group>[Channel1]</group>
-        <key>NumarkPartyMix.deck[0].volume.input</key>
+        <!-- <key>volume1</key> -->
+        <key>NumarkPartyMix.gains.volume1.input</key>
         <status>0xB0</status>
         <midino>0x1C</midino>
         <options>
@@ -178,17 +185,19 @@
       </control>
       <control>
         <group>[Channel2]</group>
-        <key>NumarkPartyMix.deck[1].volume.input</key>
+        <!-- <key>volume2</key> -->
+        <key>NumarkPartyMix.gains.volume2.input</key>
         <status>0xB1</status>
         <midino>0x1C</midino>
         <options>
           <script-binding />
         </options>
       </control>
-      <!-- Pitch -->
+      <!-- Pitch to Channel volume -->
       <control>
-        <group>[Channel1]</group>
-        <key>NumarkPartyMix.deck[0].pitch.input</key>
+        <group>[Channel3]</group>
+        <!-- <key>volume3</key> -->
+        <key>NumarkPartyMix.gains.volume3.input</key>
         <status>0xB0</status>
         <midino>0x09</midino>
         <options>
@@ -196,8 +205,9 @@
         </options>
       </control>
       <control>
-        <group>[Channel2]</group>
-        <key>NumarkPartyMix.deck[1].pitch.input</key>
+        <group>[Channel4]</group>
+        <!-- <key>volume4</key> -->
+        <key>NumarkPartyMix.gains.volume4.input</key>
         <status>0xB1</status>
         <midino>0x09</midino>
         <options>
@@ -318,10 +328,10 @@
           <script-binding />
         </options>
       </control>
-      <!-- Scratch toggle buttons (press) -->
+      <!-- Scratch toggle buttons to pfl (press) -->
       <control>
         <group>[Channel1]</group>
-        <key>NumarkPartyMix.deck[0].scratchToggle.input</key>
+        <key>NumarkPartyMix.gains.scratchAsPfl3.input</key>
         <status>0x90</status>
         <midino>0x07</midino>
         <options>
@@ -330,17 +340,17 @@
       </control>
       <control>
         <group>[Channel2]</group>
-        <key>NumarkPartyMix.deck[1].scratchToggle.input</key>
+        <key>NumarkPartyMix.gains.scratchAsPfl4.input</key>
         <status>0x91</status>
         <midino>0x07</midino>
         <options>
           <script-binding />
         </options>
       </control>
-      <!-- Scratch toggle buttons (release) -->
+      <!-- Scratch toggle buttons to pfl (release) -->
       <control>
         <group>[Channel1]</group>
-        <key>NumarkPartyMix.deck[0].scratchToggle.input</key>
+        <key>NumarkPartyMix.gains.headphoneButton</key>
         <status>0x80</status>
         <midino>0x07</midino>
         <options>
@@ -349,7 +359,7 @@
       </control>
       <control>
         <group>[Channel2]</group>
-        <key>NumarkPartyMix.deck[1].scratchToggle.input</key>
+        <key>NumarkPartyMix.gains.headphoneButton</key>
         <status>0x81</status>
         <midino>0x07</midino>
         <options>
@@ -617,7 +627,7 @@
           <script-binding />
         </options>
       </control>
-      <control>
+      <!-- <control>
         <group>[Library]</group>
         <key>NumarkPartyMix.browse.knobButton.input</key>
         <status>0x8F</status>
@@ -625,9 +635,9 @@
         <options>
           <script-binding />
         </options>
-      </control>
+      </control> -->
       <!-- Load buttons (press) -->
-      <control>
+      <!-- <control>
         <group>[Channel1]</group>
         <key>NumarkPartyMix.deck[0].loadButton.input</key>
         <status>0x9F</status>
@@ -644,9 +654,9 @@
         <options>
           <script-binding />
         </options>
-      </control>
+      </control> -->
       <!-- Load buttons (release) -->
-      <control>
+      <!-- <control>
         <group>[Channel1]</group>
         <key>NumarkPartyMix.deck[0].loadButton.input</key>
         <status>0x8F</status>
@@ -663,7 +673,7 @@
         <options>
           <script-binding />
         </options>
-      </control>
+      </control> -->
     </controls>
   </controller>
 </MixxxMIDIPreset>

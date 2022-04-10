@@ -93,10 +93,10 @@ NumarkPartyMix.shutdown = function () {
     midi.sendShortMsg(0x81, 0x1B, ledOff);
 };
 
-NumarkPartyMix.Deck = function (number) {
-    components.Deck.call(this, number);
+NumarkPartyMix.Deck = function (deckNumber) {
+    components.Deck.call(this, deckNumber);
 
-    var channel = number - 1;
+    var channel = deckNumber - 1;
     var deck = this;
     this.scratchModeEnabled = false;
 
@@ -116,12 +116,11 @@ NumarkPartyMix.Deck = function (number) {
     // I wonder if there is a easier way
     this.headphoneButton = new components.Button({
         midi: [0x90 + channel, 0x1B],
-        group: "[Channel" + number  + "]",
+        group: "[Channel" + deckNumber + "]",
         inKey: "pfl",
         outKey: "pfl",
         output: function () {
-            print(engine.getParameter("[Channel" + number  + "]", "pfl") === 1);
-            if(engine.getParameter("[Channel" + number  + "]", "pfl") === 1) {
+            if (engine.getParameter("[Channel" + deckNumber + "]", "pfl") === 1) {
                 midi.sendShortMsg(0x90 + channel, 0x1B, 0x7F); // cue
             } else {
                 midi.sendShortMsg(0x80 + channel, 0x1B, 0x00); // cue
@@ -156,18 +155,18 @@ NumarkPartyMix.Deck = function (number) {
         invert: false
     });
 
-    this.padSection = new NumarkPartyMix.PadSection(number);
+    this.padSection = new NumarkPartyMix.PadSection(deckNumber);
 
     this.scratchToggle = new components.Button({
         midi: [0x90 + channel, 0x07],
-        input: function (channel, control, value,status, group) {
+        input: function (channel, control, value, status, group) {
             if (!this.isPress(channel, control, value)) {
                 return;
             }
             deck.scratchModeEnabled = !deck.scratchModeEnabled;
-            if(deck.scratchModeEnabled){
-                engine.scratchEnable(script.deckFromGroup(group), NumarkPartyMix.jogScratchSensitivity, 33+1/3, NumarkPartyMix.jogScratchAlpha, NumarkPartyMix.jogScratchBeta, true);
-            }else{
+            if (deck.scratchModeEnabled) {
+                engine.scratchEnable(script.deckFromGroup(group), NumarkPartyMix.jogScratchSensitivity, 33 + 1 / 3, NumarkPartyMix.jogScratchAlpha, NumarkPartyMix.jogScratchBeta, true);
+            } else {
                 engine.scratchDisable(script.deckFromGroup(group));
             }
             // change the scratch mode status light
@@ -285,7 +284,7 @@ NumarkPartyMix.ModeLoop = function (deckNumber) {
             size: NumarkPartyMix.autoLoopSizes[i],
             inKey: "beatloop_" + NumarkPartyMix.autoLoopSizes[i] + "_toggle",
             outKey: "beatloop_" + NumarkPartyMix.autoLoopSizes[i] + "_enabled",
-        outConnect: false
+            outConnect: false
         });
     }
 };
@@ -337,14 +336,45 @@ NumarkPartyMix.Browse = function () {
     this.knob = new components.Encoder({
         input: function (channel, control, value) {
             var direction;
-                direction = (value > 0x40) ? -1 : 1;
-                engine.setParameter("[Library]", "MoveVertical", direction);
+            direction = (value > 0x40) ? -1 : 1;
+            engine.setParameter("[Library]", "MoveVertical", direction);
         }
     });
 
     this.knobButton = new components.Button({
         group: "[Library]",
-        inKey: "MoveFocusForward"
+        type: components.Button.prototype.types.powerWindow,
+        pressed: false,
+        input: function (channel, control, value, status, group) {
+            if (this.isPress(channel, control, value, status)) {
+                this.inToggle(channel, control, value, status, group);
+                this.isLongPressed = false;
+                this.longPressTimer = engine.beginTimer(this.longPressTimeout, function () {
+                    this.isLongPressed = true;
+                    this.longPressTimer = 0;
+                }.bind(this), true);
+            } else {
+                this.inToggle(channel, control, value, status, group);
+                if (this.longPressTimer !== 0) {
+                    engine.stopTimer(this.longPressTimer);
+                    this.longPressTimer = 0;
+                }
+                this.isLongPressed = false;
+            }
+        },
+        inToggle: function (channel, control, value, status, group) {
+            if (this.isLongPressed) {
+                focused_widget = engine.getParameter("[Library]", "focused_widget");
+                TRACKSTABLE = 3;
+                if (focused_widget === TRACKSTABLE) {
+                    engine.setParameter("[Library]", "focused_widget", 2);
+                } else {
+                    engine.setParameter("[Library]", "focused_widget", 3);
+                }
+            } else if (!this.isPress(channel, control, value, status)) {
+                engine.setParameter("[Library]", "GoToItem", 1);
+            }
+        }
     });
 };
 NumarkPartyMix.Browse.prototype = new components.ComponentContainer();
@@ -374,14 +404,11 @@ NumarkPartyMix.wheelTurn = function (channel, control, value, status, group) {
         newValue -= 128;
     } else {
     }
-
-    print(script.deckFromGroup(group));
     if (NumarkPartyMix.deck[channel].scratchModeEnabled && script.deckFromGroup(group)) {
         // scratch
         engine.scratchTick(script.deckFromGroup(group), newValue); // Scratch!
     } else {
         // jog
-        print(newValue);
         engine.setValue(group, "jog", newValue / NumarkPartyMix.jogPitchSensitivity);
     }
 };

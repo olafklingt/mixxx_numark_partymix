@@ -299,7 +299,19 @@ NumarkPartyMix.ModeSampler = function(deckNumber) {
         this.connections[i] = new components.SamplerButton({
             midi: [0x93 + deckNumber, 0x14 + i],
             number: 1 + i,
-            outConnect: false
+            outConnect: false,
+            unshift: null,
+            input: function(channel, control, value, status, _group) {
+                if (this.isPress(channel, control, value, status)) {
+                    if (engine.getValue(this.group, "track_loaded") === 0) {
+                        engine.setValue(this.group, "LoadSelectedTrack", 1);
+                    } else {
+                        engine.setValue(this.group, "start_play", 1);
+                    }
+                } else {
+                    engine.setValue(this.group, "start_stop", 1);
+                }
+            }
         });
     }
 };

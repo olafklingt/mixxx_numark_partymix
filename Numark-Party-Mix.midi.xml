@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<MixxxMIDIPreset schemaVersion="1" mixxxVersion="1.11.0+">  <!-- Schema version number to help compatibility, should the MIDI format change -->
+<MixxxMIDIPreset schemaVersion="1" mixxxVersion="2.4.0+">  <!-- Schema version number to help compatibility, should the MIDI format change -->
   <info>
-    <name>Numark Party Mix</name>
+    <name>Numark Party Mix 4 Deck</name>
     <author>Ryli Dunlap, anglefive, h67ma, bad1dea5, photoenix, denna</author>
     <description>Full Mappings for Numark Party Mix including selectable pad modes</description>
     <wiki>      <!-- Encoded URL to Mixxx wiki page documenting this controller mapping (coming soon!) --></wiki>
@@ -627,7 +627,7 @@
           <script-binding />
         </options>
       </control>
-      <!-- <control>
+      <control>
         <group>[Library]</group>
         <key>NumarkPartyMix.browse.knobButton.input</key>
         <status>0x8F</status>
@@ -635,7 +635,7 @@
         <options>
           <script-binding />
         </options>
-      </control> -->
+      </control>
       <!-- Load buttons (press) -->
       <!-- <control>
         <group>[Channel1]</group>

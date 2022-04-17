@@ -293,12 +293,12 @@ NumarkPartyMix.ModeLoop.prototype = Object.create(components.ComponentContainer.
 NumarkPartyMix.ModeSampler = function(deckNumber) {
     components.ComponentContainer.call(this);
     this.control = NumarkPartyMix.PadModeControls.SAMPLER;
-
+    var sampleoffset = (deckNumber - 1)*4;
     this.connections = new components.ComponentContainer();
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.SamplerButton({
             midi: [0x93 + deckNumber, 0x14 + i],
-            number: 1 + i,
+            number: 1 + i + sampleoffset,
             outConnect: false,
             unshift: null,
             input: function(channel, control, value, status, _group) {

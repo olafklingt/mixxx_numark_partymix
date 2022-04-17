@@ -1,8 +1,4 @@
-NumarkPartyMix = {}
-
-// whether the corresponding Mixxx option is enabled
-// (Settings -> Preferences -> Waveforms -> Synchronize zoom level across all waveforms)
-NumarkPartyMix.waveformsSynced = true;
+NumarkPartyMix = {};
 
 // jogwheel
 NumarkPartyMix.jogScratchSensitivity = 1024;
@@ -198,7 +194,6 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     this.modes[NumarkPartyMix.PadModeControls.LOOP] = new NumarkPartyMix.ModeLoop(deckNumber);
     this.modes[NumarkPartyMix.PadModeControls.SAMPLER] = new NumarkPartyMix.ModeSampler(deckNumber);
     this.modes[NumarkPartyMix.PadModeControls.EFX] = new NumarkPartyMix.ModeEFX(deckNumber);
-    // this.modes[NumarkPartyMix.PadModeControls.MODEBEATJUMP] = new NumarkPartyMix.ModeBeatjump(deckNumber);
 
     this.modeButtonPress = function(channel, control, value) {
         this.setMode(channel, control);
@@ -227,7 +222,7 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     this.blinkLedOn = function(midi1, midi2) {
         this.blinkLedOff();
         this.blinkLedState = true;
-        this.blinkTimer = engine.beginTimer(NumarkPartyMix.blinkDelay, function() {
+        this.blinkTimer = engine.beginTimer(0, function() {
             midi.sendShortMsg(midi1, midi2, this.blinkLedState ? ledOn : ledOff);
             this.blinkLedState = !this.blinkLedState;
         });

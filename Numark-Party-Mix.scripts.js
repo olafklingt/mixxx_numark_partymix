@@ -27,7 +27,7 @@ NumarkPartyMix.PadModeControls = {
     HOTCUE: 0x00,
     LOOP: 0x0B,
     SAMPLER: 0x0E,
-    MODEBEATJUMP: 0x18,
+    EFX: 0x18,
 };
 
 NumarkPartyMix.init = function(id, debugging) {
@@ -51,7 +51,7 @@ NumarkPartyMix.init = function(id, debugging) {
     // The SysEx message to send to the controller to force the midi controller
     // to send the status of every item on the control surface.
     // 0x00 0x01 0x3F is Numark mfg. ID used in SysEx messages.
-    const ControllerStatusSysex = [0xF0, 0x00, 0x01, 0x3F, 0x38, 0x48, 0xF7];
+    var ControllerStatusSysex = [0xF0, 0x00, 0x01, 0x3F, 0x38, 0x48, 0xF7];
 
     // After midi controller receives this Outbound Message request SysEx Message,
     // midi controller will send the status of every item on the
@@ -66,8 +66,8 @@ NumarkPartyMix.init = function(id, debugging) {
 
 NumarkPartyMix.shutdown = function() {
     // initialize leds
-    const ledOff = components.Button.prototype.off;
-    const ledOn = components.Button.prototype.on;
+    var ledOff = components.Button.prototype.off;
+    var ledOn = components.Button.prototype.on;
 
     // set modes back to HOTCUE
     midi.sendShortMsg(0x94, NumarkPartyMix.PadModeControls.HOTCUE, ledOn);
@@ -95,8 +95,8 @@ NumarkPartyMix.shutdown = function() {
 NumarkPartyMix.Deck = function(deckNumber) {
     components.Deck.call(this, deckNumber);
 
-    const channel = deckNumber - 1;
-    const deck = this;
+    var channel = deckNumber - 1;
+    var deck = this;
     this.scratchModeEnabled = false;
 
     this.playButton = new components.PlayButton({
@@ -189,27 +189,28 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     this.blinkLedState = true;
 
     // initialize leds
-    const ledOff = components.Button.prototype.off;
-    const ledOn = components.Button.prototype.on;
+    var ledOff = components.Button.prototype.off;
+    var ledOn = components.Button.prototype.on;
     midi.sendShortMsg(0x93 + deckNumber, 0x00, ledOn); // cue
 
     this.modes = {};
     this.modes[NumarkPartyMix.PadModeControls.HOTCUE] = new NumarkPartyMix.ModeHotcue(deckNumber);
     this.modes[NumarkPartyMix.PadModeControls.LOOP] = new NumarkPartyMix.ModeLoop(deckNumber);
     this.modes[NumarkPartyMix.PadModeControls.SAMPLER] = new NumarkPartyMix.ModeSampler(deckNumber);
-    this.modes[NumarkPartyMix.PadModeControls.MODEBEATJUMP] = new NumarkPartyMix.ModeBeatjump(deckNumber);
+    this.modes[NumarkPartyMix.PadModeControls.EFX] = new NumarkPartyMix.ModeEFX(deckNumber);
+    // this.modes[NumarkPartyMix.PadModeControls.MODEBEATJUMP] = new NumarkPartyMix.ModeBeatjump(deckNumber);
 
     this.modeButtonPress = function(channel, control, value) {
         this.setMode(channel, control);
     };
 
     this.padPress = function(channel, control, value, status, group) {
-        const i = (control - 0x14) % 8;
+        var i = (control - 0x14) % 8;
         this.currentMode.connections[i].input(channel, control, value, status, group);
     };
 
     this.setMode = function(channel, control) {
-        const newMode = this.modes[control];
+        var newMode = this.modes[control];
         this.currentMode.forEachComponent(function(component) {
             component.disconnect();
         });
@@ -304,32 +305,45 @@ NumarkPartyMix.ModeSampler = function(deckNumber) {
 };
 NumarkPartyMix.ModeSampler.prototype = Object.create(components.ComponentContainer.prototype);
 
-NumarkPartyMix.ModeBeatjump = function(deckNumber) {
+NumarkPartyMix.ModeEFX = function(deckNumber) {
     components.ComponentContainer.call(this);
 
-    this.control = NumarkPartyMix.PadModeControls.BEATJUMP;
+    // this.control = NumarkPartyMix.PadModeControls.EFX;
 
-    const jumps = [
-        "beatjump_1_backward",
-        "beatjump_1_forward",
-        "beatjump_4_backward",
-        "beatjump_4_forward"
+    var fx = [
+        "[EffectRack1_EffectUnit" + deckNumber + "_Effect1]",
+        "[EffectRack1_EffectUnit" + deckNumber + "_Effect2]",
+        "[EffectRack1_EffectUnit" + deckNumber + "_Effect3]"
     ];
 
     this.connections = new components.ComponentContainer();
-    const p = this.connections;
+    var p = this.connections;
 
-    jumps.forEach(function(jump, i) {
+    fx.forEach(function(fx, i) {
         p[i] = new components.Button({
             midi: [0x93 + deckNumber, 0x14 + i],
-            group: "[Channel" + deckNumber + "]",
-            inKey: jump,
-            outKey: jump,
+            group: fx,
+            inKey: "enabled",
             outConnect: false
         });
     })
+    p[3] = new components.Button({
+        midi: [0x93 + deckNumber, 0x17],
+        type: components.Button.prototype.types.toggle,
+        group: "[EffectRack1_EffectUnit" + deckNumber + "]",
+        inKey: "mix_mode",
+        outKey: "mix_mode",
+        output: function() {
+            if (engine.getParameter("[EffectRack1_EffectUnit" + deckNumber + "]", "mix_mode") === 0) {
+                midi.sendShortMsg(0x93 + deckNumber, 0x17, 0x7F); // cue
+            } else {
+                midi.sendShortMsg(0x83 + deckNumber, 0x17, 0x01); // cue
+            }
+        },
+        outConnect: false
+    });
 };
-NumarkPartyMix.ModeBeatjump.prototype = Object.create(components.ComponentContainer.prototype);
+NumarkPartyMix.ModeEFX.prototype = Object.create(components.ComponentContainer.prototype);
 
 NumarkPartyMix.Browse = function() {
     var pressturn = false;
@@ -338,8 +352,11 @@ NumarkPartyMix.Browse = function() {
         input: function(channel, control, value) {
             var direction;
             if (pressturn) {
-                direction = (value > 0x40) ? -1 : 1;
-                engine.setParameter("[Library]", "MoveHorizontal", direction);
+                if (value > 0x40) {
+                    engine.setParameter("[Library]", "MoveFocusForward", 1);
+                } else {
+                    engine.setParameter("[Library]", "MoveFocusBackward", 1);
+                }
             } else {
                 direction = (value > 0x40) ? -1 : 1;
                 engine.setParameter("[Library]", "MoveVertical", direction);
@@ -350,16 +367,18 @@ NumarkPartyMix.Browse = function() {
     this.knobButton = new components.Button({
         group: "[Library]",
         type: components.Button.prototype.types.powerWindow,
+        isLongPressed: false,
         input: function(channel, control, value, status, group) {
             pressturn = this.isPress(channel, control, value, status);
-            print(pressturn)
+            print("pressturn");
+            print(pressturn);
             if (pressturn) {
                 this.inToggle(channel, control, value, status, group);
                 this.isLongPressed = false;
                 this.longPressTimer = engine.beginTimer(this.longPressTimeout, function() {
                     this.isLongPressed = true;
                     this.longPressTimer = 0;
-                }.bind(this), true);
+                }, true);
             } else {
                 this.inToggle(channel, control, value, status, group);
                 if (this.longPressTimer !== 0) {
@@ -370,20 +389,8 @@ NumarkPartyMix.Browse = function() {
             }
         },
         inToggle: function(channel, control, value, status, group) {
-            // if (this.isLongPressed) {
-            //     longpress=true;
-            //     focused_widget = engine.getParameter("[Library]", "focused_widget");
-            //     TRACKSTABLE = 3;
-            //     if (focused_widget === TRACKSTABLE) {
-            //         engine.setParameter("[Library]", "focused_widget", 2);
-            //     } else {
-            //         engine.setParameter("[Library]", "focused_widget", 3);
-            //     }
-            // } else
-            if ((!pressturn) && (!this.isLongPressed)) {
+            if (! (pressturn || this.isLongPressed)) {
                 engine.setParameter("[Library]", "GoToItem", 1);
-            } else {
-
             }
         }
     });

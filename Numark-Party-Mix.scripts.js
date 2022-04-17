@@ -336,6 +336,7 @@ NumarkPartyMix.ModeEFX = function(deckNumber) {
             midi: [0x93 + deckNumber, 0x14 + i],
             group: fx,
             inKey: "enabled",
+            outKey: "enabled",
             outConnect: false
         });
     })

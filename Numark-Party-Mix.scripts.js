@@ -70,14 +70,14 @@ NumarkPartyMix.shutdown = function() {
     midi.sendShortMsg(0x95, NumarkPartyMix.PadModeControls.HOTCUE, ledOn);
 
     // dim connections
-    midi.sendShortMsg(0x90, 0x14, ledOff);
-    midi.sendShortMsg(0x90, 0x15, ledOff);
-    midi.sendShortMsg(0x90, 0x16, ledOff);
-    midi.sendShortMsg(0x90, 0x17, ledOff);
-    midi.sendShortMsg(0x91, 0x14, ledOff);
-    midi.sendShortMsg(0x91, 0x15, ledOff);
-    midi.sendShortMsg(0x91, 0x16, ledOff);
-    midi.sendShortMsg(0x91, 0x17, ledOff);
+    midi.sendShortMsg(0x84, 0x14, ledOff);
+    midi.sendShortMsg(0x84, 0x15, ledOff);
+    midi.sendShortMsg(0x84, 0x16, ledOff);
+    midi.sendShortMsg(0x84, 0x17, ledOff);
+    midi.sendShortMsg(0x85, 0x14, ledOff);
+    midi.sendShortMsg(0x85, 0x15, ledOff);
+    midi.sendShortMsg(0x85, 0x16, ledOff);
+    midi.sendShortMsg(0x85, 0x17, ledOff);
 
     // dim LEDs for scratch buttons
     midi.sendShortMsg(0x90, 0x07, ledOff);
@@ -179,9 +179,6 @@ NumarkPartyMix.Deck.prototype = new components.Deck();
 NumarkPartyMix.PadSection = function(deckNumber) {
     components.ComponentContainer.call(this);
 
-    this.blinkTimer = 0;
-    this.blinkLedState = true;
-
     // initialize leds
     var ledOff = components.Button.prototype.off;
     var ledOn = components.Button.prototype.on;
@@ -214,32 +211,6 @@ NumarkPartyMix.PadSection = function(deckNumber) {
         });
 
         this.currentMode = newMode;
-    };
-
-    // start an infinite timer that toggles led state
-    this.blinkLedOn = function(midi1, midi2) {
-        this.blinkLedOff();
-        this.blinkLedState = true;
-        this.blinkTimer = engine.beginTimer(0, function() {
-            midi.sendShortMsg(midi1, midi2, this.blinkLedState ? ledOn : ledOff);
-            this.blinkLedState = !this.blinkLedState;
-        });
-    };
-
-    // stop the blink timer
-    this.blinkLedOff = function() {
-        if (this.blinkTimer === 0) {
-            return;
-        }
-
-        engine.stopTimer(this.blinkTimer);
-        this.blinkTimer = 0;
-    };
-
-    this.disablePadLights = function() {
-        for (var i = 0; i < 4; i++) {
-            midi.sendShortMsg(0x93 + deckNumber, 0x14 + i, ledOff);
-        }
     };
 
     this.currentMode = this.modes[NumarkPartyMix.PadModeControls.HOTCUE];

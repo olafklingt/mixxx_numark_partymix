@@ -1,4 +1,4 @@
-NumarkPartyMix = {};
+var NumarkPartyMix = {};
 
 // jogwheel
 NumarkPartyMix.jogScratchSensitivity = 1024;
@@ -107,8 +107,6 @@ NumarkPartyMix.Deck = function(deckNumber) {
         midi: [0x90 + channel, 0x02],
     });
 
-    // the headphoneButton has a state in the hardware
-    // I wonder if there is a easier way
     this.headphoneButton = new components.Button({
         midi: [0x90 + channel, 0x1B],
         group: "[Channel" + deckNumber + "]",
@@ -116,9 +114,9 @@ NumarkPartyMix.Deck = function(deckNumber) {
         outKey: "pfl",
         output: function() {
             if (engine.getParameter("[Channel" + deckNumber + "]", "pfl") === 1) {
-                midi.sendShortMsg(0x90 + channel, 0x1B, 0x7F); // cue
+                midi.sendShortMsg(0x90 + channel, 0x1B, 0x7F);
             } else {
-                midi.sendShortMsg(0x80 + channel, 0x1B, 0x00); // cue
+                midi.sendShortMsg(0x80 + channel, 0x1B, 0x00);
             }
         }
     });
@@ -187,7 +185,7 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     // initialize leds
     var ledOff = components.Button.prototype.off;
     var ledOn = components.Button.prototype.on;
-    midi.sendShortMsg(0x93 + deckNumber, 0x00, ledOn); // cue
+    midi.sendShortMsg(0x93 + deckNumber, 0x00, ledOn);
 
     this.modes = {};
     this.modes[NumarkPartyMix.PadModeControls.HOTCUE] = new NumarkPartyMix.ModeHotcue(deckNumber);
@@ -296,15 +294,19 @@ NumarkPartyMix.ModeSampler = function(deckNumber) {
             number: 1 + i + sampleoffset,
             outConnect: false,
             unshift: null,
+            outKey: "play_indicator",
             input: function(channel, control, value, status, _group) {
                 if (this.isPress(channel, control, value, status)) {
                     if (engine.getValue(this.group, "track_loaded") === 0) {
                         engine.setValue(this.group, "LoadSelectedTrack", 1);
                     } else {
-                        engine.setValue(this.group, "start_play", 1);
+                        print(engine.getValue(this.group, "play"))
+                        if (engine.getValue(this.group, "play") === 1) {
+                            engine.setValue(this.group, "start_stop", 1);
+                        } else {
+                            engine.setValue(this.group, "start_play", 1);
+                        }
                     }
-                } else {
-                    engine.setValue(this.group, "start_stop", 1);
                 }
             }
         });
@@ -378,8 +380,6 @@ NumarkPartyMix.Browse = function() {
         isLongPressed: false,
         input: function(channel, control, value, status, group) {
             pressturn = this.isPress(channel, control, value, status);
-            print("pressturn");
-            print(pressturn);
             if (pressturn) {
                 this.inToggle(channel, control, value, status, group);
                 this.isLongPressed = false;
@@ -428,11 +428,10 @@ NumarkPartyMix.wheelTurn = function(channel, control, value, status, group) {
     if (value >= 64) {
         // correct the value if going backwards
         newValue -= 128;
-    } else {
     }
     if (NumarkPartyMix.deck[channel].scratchModeEnabled && script.deckFromGroup(group)) {
         // scratch
-        engine.scratchTick(script.deckFromGroup(group), newValue); // Scratch!
+        engine.scratchTick(script.deckFromGroup(group), newValue);
     } else {
         // jog
         engine.setValue(group, "jog", newValue / NumarkPartyMix.jogPitchSensitivity);

@@ -26,7 +26,7 @@ NumarkPartyMix.PadModeControls = {
     EFX: 0x18,
 };
 
-NumarkPartyMix.init = function(id, debugging) {
+NumarkPartyMix.init = function(_id, _debugging) {
     /// init party led switch off
     midi.sendShortMsg(0xb0, 0x40, 0x00);//0x60 seems to be max
     midi.sendShortMsg(0xb0, 0x42, 0x00);
@@ -152,7 +152,7 @@ NumarkPartyMix.Deck = function(deckNumber) {
 
     this.scratchToggle = new components.Button({
         midi: [0x90 + channel, 0x07],
-        input: function(channel, control, value, status, group) {
+        input: function(channel, control, value, _status, group) {
             if (!this.isPress(channel, control, value)) {
                 return;
             }
@@ -190,7 +190,7 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     this.modes[NumarkPartyMix.PadModeControls.SAMPLER] = new NumarkPartyMix.ModeSampler(deckNumber);
     this.modes[NumarkPartyMix.PadModeControls.EFX] = new NumarkPartyMix.ModeEFX(deckNumber);
 
-    this.modeButtonPress = function(channel, control, value) {
+    this.modeButtonPress = function(channel, control, _value) {
         this.setMode(channel, control);
     };
 
@@ -199,7 +199,7 @@ NumarkPartyMix.PadSection = function(deckNumber) {
         this.currentMode.connections[i].input(channel, control, value, status, group);
     };
 
-    this.setMode = function(channel, control) {
+    this.setMode = function(_channel, control) {
         var newMode = this.modes[control];
         this.currentMode.forEachComponent(function(component) {
             component.disconnect();
@@ -307,7 +307,7 @@ NumarkPartyMix.ModeEFX = function(deckNumber) {
             outKey: "enabled",
             outConnect: false
         });
-    })
+    });
     p[3] = new components.Button({
         midi: [0x93 + deckNumber, 0x17],
         type: components.Button.prototype.types.toggle,
@@ -352,14 +352,14 @@ NumarkPartyMix.Browse = function() {
         input: function(channel, control, value, status, group) {
             pressturn = this.isPress(channel, control, value, status);
             if (pressturn) {
-                this.inToggle(channel, control, value, status, group);
+                this.inToggle();
                 this.isLongPressed = false;
                 this.longPressTimer = engine.beginTimer(this.longPressTimeout, function() {
                     this.isLongPressed = true;
                     this.longPressTimer = 0;
                 }, true);
             } else {
-                this.inToggle(channel, control, value, status, group);
+                this.inToggle();
                 if (this.longPressTimer !== 0) {
                     engine.stopTimer(this.longPressTimer);
                     this.longPressTimer = 0;
@@ -367,7 +367,7 @@ NumarkPartyMix.Browse = function() {
                 this.isLongPressed = false;
             }
         },
-        inToggle: function(channel, control, value, status, group) {
+        inToggle: function() {
             if (! (pressturn || this.isLongPressed)) {
                 engine.setParameter("[Library]", "GoToItem", 1);
             }
@@ -394,7 +394,7 @@ NumarkPartyMix.Gains = function() {
 };
 NumarkPartyMix.Gains.prototype = new components.ComponentContainer();
 
-NumarkPartyMix.wheelTurn = function(channel, control, value, status, group) {
+NumarkPartyMix.wheelTurn = function(channel, _control, value, _status, group) {
     var newValue = value;
     if (value >= 64) {
         // correct the value if going backwards

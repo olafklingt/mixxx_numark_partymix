@@ -180,9 +180,7 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     components.ComponentContainer.call(this);
 
     // initialize leds
-    var ledOff = components.Button.prototype.off;
-    var ledOn = components.Button.prototype.on;
-    midi.sendShortMsg(0x93 + deckNumber, 0x00, ledOn);
+    midi.sendShortMsg(0x93 + deckNumber, 0x00, components.Button.prototype.on);
 
     this.modes = {};
     this.modes[NumarkPartyMix.PadModeControls.HOTCUE] = new NumarkPartyMix.ModeHotcue(deckNumber);
@@ -315,9 +313,9 @@ NumarkPartyMix.ModeEFX = function(deckNumber) {
         outKey: "mix_mode",
         output: function() {
             if (engine.getParameter("[EffectRack1_EffectUnit" + deckNumber + "]", "mix_mode") === 0) {
-                midi.sendShortMsg(0x93 + deckNumber, 0x17, 0x7F); // cue
+                midi.sendShortMsg(0x93 + deckNumber, 0x17, 0x7F);
             } else {
-                midi.sendShortMsg(0x83 + deckNumber, 0x17, 0x01); // cue
+                midi.sendShortMsg(0x83 + deckNumber, 0x17, 0x01);
             }
         },
         outConnect: false
@@ -348,7 +346,7 @@ NumarkPartyMix.Browse = function() {
         group: "[Library]",
         type: components.Button.prototype.types.powerWindow,
         isLongPressed: false,
-        input: function(channel, control, value, status, group) {
+        input: function(channel, control, value, status) {
             pressturn = this.isPress(channel, control, value, status);
             if (pressturn) {
                 this.inToggle();

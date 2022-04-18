@@ -271,7 +271,6 @@ NumarkPartyMix.ModeSampler = function(deckNumber) {
                     if (engine.getValue(this.group, "track_loaded") === 0) {
                         engine.setValue(this.group, "LoadSelectedTrack", 1);
                     } else {
-                        print(engine.getValue(this.group, "play"))
                         if (engine.getValue(this.group, "play") === 1) {
                             engine.setValue(this.group, "start_stop", 1);
                         } else {

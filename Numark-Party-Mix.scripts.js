@@ -285,7 +285,7 @@ NumarkPartyMix.ModeSampler.prototype = Object.create(components.ComponentContain
 NumarkPartyMix.ModeEFX = function(deckNumber) {
     components.ComponentContainer.call(this);
 
-    // this.control = NumarkPartyMix.PadModeControls.EFX;
+    this.control = NumarkPartyMix.PadModeControls.EFX;
 
     var fx = [
         "[EffectRack1_EffectUnit" + deckNumber + "_Effect1]",
@@ -393,9 +393,11 @@ NumarkPartyMix.Gains.prototype = new components.ComponentContainer();
 
 NumarkPartyMix.wheelTurn = function(channel, _control, value, _status, group) {
     var newValue = value;
-    if (value >= 64) {
-        // correct the value if going backwards
-        newValue -= 128;
+    //clockwise (slow-fast) 0x01 - 0x06
+    //counter-clockwise (slow-fast) 0x7F - 0x7A
+    if (value >= 0x40) {
+        //transform counter-clockwise messages to negative values
+        newValue -= 0x80;
     }
     if (NumarkPartyMix.deck[channel].scratchModeEnabled && script.deckFromGroup(group)) {
         // scratch

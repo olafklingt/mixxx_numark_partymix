@@ -393,29 +393,40 @@ NumarkPartyMix.ModeBeatjump = function (deckNumber) {
 };
 NumarkPartyMix.ModeBeatjump.prototype = Object.create(components.ComponentContainer.prototype);
 
-NumarkPartyMix.Browse = function () {
+NumarkPartyMix.Browse = function() {
+    var pressturn = false;
+
     this.knob = new components.Encoder({
-        input: function (channel, control, value) {
+        input: function(channel, control, value) {
             var direction;
-            direction = (value > 0x40) ? -1 : 1;
-            engine.setParameter("[Library]", "MoveVertical", direction);
+            if (pressturn) {
+                if (value > 0x40) {
+                    engine.setParameter("[Library]", "MoveFocusForward", 1);
+                } else {
+                    engine.setParameter("[Library]", "MoveFocusBackward", 1);
+                }
+            } else {
+                direction = (value > 0x40) ? -1 : 1;
+                engine.setParameter("[Library]", "MoveVertical", direction);
+            }
         }
     });
 
     this.knobButton = new components.Button({
         group: "[Library]",
         type: components.Button.prototype.types.powerWindow,
-        pressed: false,
-        input: function (channel, control, value, status, group) {
-            if (this.isPress(channel, control, value, status)) {
-                this.inToggle(channel, control, value, status, group);
+        isLongPressed: false,
+        input: function(channel, control, value, status) {
+            pressturn = this.isPress(channel, control, value, status);
+            if (pressturn) {
+                this.inToggle();
                 this.isLongPressed = false;
-                this.longPressTimer = engine.beginTimer(this.longPressTimeout, function () {
+                this.longPressTimer = engine.beginTimer(this.longPressTimeout, function() {
                     this.isLongPressed = true;
                     this.longPressTimer = 0;
-                }.bind(this), true);
+                }, true);
             } else {
-                this.inToggle(channel, control, value, status, group);
+                this.inToggle();
                 if (this.longPressTimer !== 0) {
                     engine.stopTimer(this.longPressTimer);
                     this.longPressTimer = 0;
@@ -423,74 +434,15 @@ NumarkPartyMix.Browse = function () {
                 this.isLongPressed = false;
             }
         },
-        inToggle: function (channel, control, value, status, group) {
-            if (this.isLongPressed) {
-                focused_widget = engine.getParameter("[Library]", "focused_widget");
-                TRACKSTABLE = 3;
-                if (focused_widget === TRACKSTABLE) {
-                    engine.setParameter("[Library]", "focused_widget", 2);
-                } else {
-                    engine.setParameter("[Library]", "focused_widget", 3);
-                }
-            } else if (!this.isPress(channel, control, value, status)) {
+        inToggle: function() {
+            if (! (pressturn || this.isLongPressed)) {
                 engine.setParameter("[Library]", "GoToItem", 1);
             }
         }
     });
 };
-
-// NumarkPartyMix.Browse = function () {
-//     this.knob = new components.Encoder({
-//         input: function (channel, control, value) {
-//             var direction;
-//             // if (!NumarkPartyMix.shifted) {
-//                 direction = (value > 0x40) ? -1 : 1;
-//                 engine.setParameter("[Library]", "MoveVertical", direction);
-//             // } else {
-//             //     direction = (value > 0x40) ? "up" : "down";
-//             //     engine.setParameter("[Channel1]", "waveform_zoom_" + direction, 1);
-
-//             //     // need to zoom both channels if waveform sync is disabled in Mixxx settings.
-//             //     // and when it's enabled then no need to zoom 2nd channel, as it will cause
-//             //     // the zoom to jump 2 levels at once
-//             //     if (!NumarkPartyMix.waveformsSynced) {
-//             //         engine.setParameter("[Channel2]", "waveform_zoom_" + direction, 1);
-//             //     }
-//             // }
-//         }
-//     });
-
-//     this.knobButton = new components.Button({
-//         midi: [0x9F, 0x00],
-//         // inKey: "LoadSelectedTrack",
-//         input: function (channel, control, value,status, group) {
-//             print("LoadSelectedTrack1");
-//             print(engine.getValue("[Channel1]","play"));
-//             print("LoadSelectedTrack2");
-//             print(engine.getValue("[Channel2]","play"));
-//             if(!engine.getValue("[Channel1]","play")){
-//                 engine.setValue("[Channel1]", 'LoadSelectedTrack', 1);
-//             } else if (!engine.getValue("[Channel2]","play")){
-//                 engine.setValue("[Channel2]", 'LoadSelectedTrack', 1);
-//             } else {
-//                 print("for now only load into deck 1 and 2")
-//             }
-//         }
-//     });
-
-
-//     // this.knobButton = new components.Button({
-//     //     group: "[Library]",
-//     //     // shift: function () {
-//     //     //     this.inKey = "GoToItem";
-//     //     // },
-//     //     // unshift: function () {
-//     //     //     this.inKey = "MoveFocusForward";
-//     //     // }
-//     //     inKey: "MoveFocusForward"
-//     // });
-// };
 NumarkPartyMix.Browse.prototype = new components.ComponentContainer();
+
 
 NumarkPartyMix.Gains = function () {
     this.mainGain = new components.Pot({

@@ -464,9 +464,25 @@ NumarkPartyMix.Gains = function () {
     //     inKey: "pregain"
     // });
 
-    this.headphoneButton = function (channel, control, value, status, group) {
-        engine.setValue(group, 'pfl', value ? 1 : 0);
-    };
+    this.pfl1 = new components.Button({
+        midi: [0x90, 0x1B],
+        // group: "[Channel1]",
+        key: "pfl",
+        output: function(value) {
+            var note = (value === 0x00 ? 0x80 : 0x90);
+            midi.sendShortMsg(note, 0x1B, this.outValueScale(value));
+        }
+    });
+
+    this.pfl2 = new components.Button({
+        midi: [0x91, 0x1B],
+        // group: "[Channel2]",
+        key: "pfl",
+        output: function(value) {
+            var note = (value === 0x00 ? 0x81 : 0x91);
+            midi.sendShortMsg(note, 0x1B, this.outValueScale(value));
+        }
+    });
 
     this.scratchAsPfl3 = new components.Button({
         type: components.Button.prototype.types.toggle,

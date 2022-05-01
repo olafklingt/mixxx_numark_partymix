@@ -21,3 +21,5 @@ Numark-Party-Mix - original mapping (should be removed after merge in mixxx proj
 Numark-Party-Mix-TMB - Instead of Gain Treble Bass the 3 Knobs are used for Treble Middle Bass
 
 Numark-Party-Mix-GMQ - Instead of Gain Treble Bass the 3 Knobs are used for: Gain Middle QuickEffect (usually "HP/LP" Filter)
+
+Numark-Party-Mix-4Deck - use load button 1 2 to switch to deck 3 or 4 use "Party Lights" to indicate lower decks

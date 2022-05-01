@@ -1,3 +1,4 @@
+"use strict";
 var NumarkPartyMix = {};
 
 // jogwheel
@@ -6,7 +7,7 @@ var NumarkPartyMix = {};
 // If one is scratching the point in a track is moving.
 // Maybe these variables need improvement.
 NumarkPartyMix.jogScratchSensitivity = 340;
-NumarkPartyMix.jogScratchAlpha = 1/8; // do NOT set to 2 or higher
+NumarkPartyMix.jogScratchAlpha = 1 / 8; // do NOT set to 2 or higher
 NumarkPartyMix.jogScratchBeta = 1 / 8 / 32;
 NumarkPartyMix.jogPitchSensitivity = 10;
 NumarkPartyMix.jogSearchSensitivity = 1 / 2;
@@ -31,7 +32,9 @@ NumarkPartyMix.PadModeControls = {
     EFX: 0x18,
 };
 
-NumarkPartyMix.init = function(_id, _debugging) {
+NumarkPartyMix.scratchEnabled = {}; // holds state of scratch button for all decks
+
+NumarkPartyMix.init = function (_id, _debugging) {
     /// init party led switch off
     midi.sendShortMsg(0xb0, 0x40, 0x00);//0x60 seems to be max
     midi.sendShortMsg(0xb0, 0x42, 0x00);
@@ -41,9 +44,10 @@ NumarkPartyMix.init = function(_id, _debugging) {
     midi.sendShortMsg(0x81, 0x1B, 0x00);
 
     // initialize component containers
-    NumarkPartyMix.deck = new components.ComponentContainer({outConnect: false});
+    // NumarkPartyMix.deck = new components.ComponentContainer({ outConnect: false });
+    NumarkPartyMix.deck = []
     for (var i = 0; i < 2; i++) {
-        NumarkPartyMix.deck[i] = new NumarkPartyMix.Deck(i + 1);
+        NumarkPartyMix.deck[i] = new NumarkPartyMix.Deck([i + 1, i + 3], i);
     }
 
     NumarkPartyMix.browse = new NumarkPartyMix.Browse();
@@ -54,7 +58,7 @@ NumarkPartyMix.init = function(_id, _debugging) {
 
 };
 
-NumarkPartyMix.shutdown = function() {
+NumarkPartyMix.shutdown = function () {
     // initialize leds
     var ledOff = components.Button.prototype.off;
     var ledOn = components.Button.prototype.on;
@@ -82,12 +86,8 @@ NumarkPartyMix.shutdown = function() {
     midi.sendShortMsg(0x81, 0x1B, ledOff);
 };
 
-NumarkPartyMix.Deck = function(deckNumber) {
-    components.Deck.call(this, deckNumber);
-
-    var channel = deckNumber - 1;
-    var deck = this;
-    this.scratchModeEnabled = false;
+NumarkPartyMix.Deck = function (deckNumbers, channel) {
+    components.Deck.call(this, deckNumbers);
 
     this.playButton = new components.PlayButton({
         midi: [0x90 + channel, 0x00],
@@ -104,7 +104,7 @@ NumarkPartyMix.Deck = function(deckNumber) {
     this.headphoneButton = new components.Button({
         midi: [0x90 + channel, 0x1B],
         key: "pfl",
-        output: function(value) {
+        output: function (value) {
             var note = (value === 0x00 ? 0x80 : 0x90) + channel;
             midi.sendShortMsg(note, 0x1B, this.outValueScale(value));
         }
@@ -147,34 +147,35 @@ NumarkPartyMix.Deck = function(deckNumber) {
         invert: false
     });
 
-    this.padSection = new NumarkPartyMix.PadSection(deckNumber);
+    this.padSection = new NumarkPartyMix.PadSection(channel, this.currentDeck);
+    // this.scratchSection = new NumarkPartyMix.ScatchSection(channel,this.currentDeck);
 
     this.scratchToggle = new components.Button({
         midi: [0x90 + channel, 0x07],
-        input: function(channel, control, value, _status, group) {
-            if (!this.isPress(channel, control, value)) {
-                return;
+        input: function (channel,control,_value, _status, group) {
+            print(control)
+            NumarkPartyMix.scratchEnabled[this.group] = !NumarkPartyMix.scratchEnabled[this.group];
+
+            if (!NumarkPartyMix.scratchEnabled[this.group]) {
+                engine.scratchDisable(script.deckFromGroup(this.group));
             }
-            deck.scratchModeEnabled = !deck.scratchModeEnabled;
-            if (deck.scratchModeEnabled) {
-                this.send(this.on);
-            } else {
-                engine.scratchDisable(script.deckFromGroup(group));
-                this.send(this.off);
-            }
+            this.output();
         },
+        output: function (){
+            print("output")
+            this.send(NumarkPartyMix.scratchEnabled[this.group] ? this.on : this.off);
+        }
     });
 
     this.wheelTurn = new components.Encoder({
-        group: "[Channel" + deckNumber + "]",
-        key: "wheelTurn",
+        group: this.currentDeck,
         touchTimer: 0,
         touchTimout: 0,
-        input: function(channel, _control, value, _status, group) {
+        input: function (channel, _control, value, _status, group) {
             //clockwise (slow-fast) 0x01 - 0x06
             //counter-clockwise (slow-fast) 0x7F - 0x7A1212
             //transform counter-clockwise messages to negative values
-            if (this.touchTimer!==0) {
+            if (this.touchTimer !== 0) {
                 engine.stopTimer(this.touchTimer);
                 this.touchTimer = 0;
             }
@@ -183,52 +184,51 @@ NumarkPartyMix.Deck = function(deckNumber) {
                 newValue -= 0x80;
             }
 
-            if (deck.scratchModeEnabled) {
-                this.touchTimer=engine.beginTimer(50, function() { engine.scratchDisable(deckNumber); }, true);
+            if (NumarkPartyMix.scratchEnabled[this.group]) {
+                this.touchTimer = engine.beginTimer(50, function () { engine.scratchDisable(script.deckFromGroup(this.group)); }, true);
 
-                if (!engine.isScratching(deckNumber)) {
-                    engine.scratchEnable(deckNumber, NumarkPartyMix.jogScratchSensitivity, 33 + 1 / 3, NumarkPartyMix.jogScratchAlpha, NumarkPartyMix.jogScratchBeta, true);
+                if (!engine.isScratching(script.deckFromGroup(this.group))) {
+                    engine.scratchEnable(script.deckFromGroup(this.group), NumarkPartyMix.jogScratchSensitivity, 33 + 1 / 3, NumarkPartyMix.jogScratchAlpha, NumarkPartyMix.jogScratchBeta, true);
                 }
-                engine.scratchTick(deckNumber, newValue); // Scratch!
+                engine.scratchTick(script.deckFromGroup(this.group), newValue); // Scratch!
             } else {
-                if (engine.getValue(group, "play") > 0) {
-                    engine.setValue(group, "jog", newValue / NumarkPartyMix.jogPitchSensitivity); // fine jog to sync
+                if (engine.getValue(this.group, "play") > 0) {
+                    engine.setValue(this.group, "jog", newValue / NumarkPartyMix.jogPitchSensitivity); // fine jog to sync
                 } else {
-                    engine.setValue(group, "jog", newValue / NumarkPartyMix.jogSearchSensitivity); // scrup through track
+                    engine.setValue(this.group, "jog", newValue / NumarkPartyMix.jogSearchSensitivity); // scrup through track
 
                 }
             }
         }
     });
 
-    this.reconnectComponents(function(component) {
+    this.reconnectComponents(function (component) {
         if (component.group === undefined) {
             component.group = this.currentDeck;
         }
     });
 };
+NumarkPartyMix.Deck.prototype = new components.Deck({ outConnect: false });
 
-NumarkPartyMix.Deck.prototype = new components.Deck();
-
-NumarkPartyMix.PadSection = function(deckNumber) {
+NumarkPartyMix.PadSection = function (channel, currentDeck) {
     components.ComponentContainer.call(this);
 
     // initialize leds
-    midi.sendShortMsg(0x93 + deckNumber, 0x00, components.Button.prototype.on);
+    midi.sendShortMsg(0x94 + channel, 0x00, components.Button.prototype.on);
 
     this.modes = {};
-    this.modes[NumarkPartyMix.PadModeControls.HOTCUE] = new NumarkPartyMix.ModeHotcue(deckNumber);
-    this.modes[NumarkPartyMix.PadModeControls.LOOP] = new NumarkPartyMix.ModeLoop(deckNumber);
-    this.modes[NumarkPartyMix.PadModeControls.SAMPLER] = new NumarkPartyMix.ModeSampler(deckNumber);
-    this.modes[NumarkPartyMix.PadModeControls.EFX] = new NumarkPartyMix.ModeEFX(deckNumber);
+    this.modes[NumarkPartyMix.PadModeControls.HOTCUE] = new NumarkPartyMix.ModeHotcue(channel, currentDeck);
+    this.modes[NumarkPartyMix.PadModeControls.LOOP] = new NumarkPartyMix.ModeLoop(channel, currentDeck);
+    this.modes[NumarkPartyMix.PadModeControls.SAMPLER] = new NumarkPartyMix.ModeSampler(channel, currentDeck);
+    this.modes[NumarkPartyMix.PadModeControls.EFX] = new NumarkPartyMix.ModeEFX(channel, currentDeck);
 
-    this.modeButtonPress = function(channel, control, _value) {
+    this.modeButtonPress = function (channel, control, _value) {
         var newMode = this.modes[control];
-        this.currentMode.forEachComponent(function(component) {
+        this.currentMode.forEachComponent(function (component) {
             component.disconnect();
         });
 
-        newMode.forEachComponent(function(component) {
+        newMode.forEachComponent(function (component) {
             component.connect();
             component.trigger();
         });
@@ -236,42 +236,43 @@ NumarkPartyMix.PadSection = function(deckNumber) {
         this.currentMode = newMode;
     };
 
-    this.padPress = function(channel, control, value, status, group) {
+    this.padPress = function (channel, control, value, status, group) {
         var i = (control - 0x14) % 8;
-        this.currentMode.connections[i].input(channel, control, value, status, group);
+        this.currentMode.connections[i].input(channel, control, value, status, this.group);
     };
 
+    this.group = currentDeck;
     this.currentMode = this.modes[NumarkPartyMix.PadModeControls.HOTCUE];
 };
 NumarkPartyMix.PadSection.prototype = Object.create(components.ComponentContainer.prototype);
 
 
-NumarkPartyMix.ModeHotcue = function(deckNumber) {
+NumarkPartyMix.ModeHotcue = function (channel, currentDeck) {
     components.ComponentContainer.call(this);
 
     this.control = NumarkPartyMix.PadModeControls.HOTCUE;
 
-    this.connections = new components.ComponentContainer({outConnect: false});
+    this.connections = new components.ComponentContainer({ outConnect: false });
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.HotcueButton({
-            group: "[Channel" + deckNumber + "]",
-            midi: [0x93 + deckNumber, 0x14 + i],
+            group: currentDeck,
+            midi: [0x94 + channel, 0x14 + i],
             number: i + 1,
         });
     }
 };
 NumarkPartyMix.ModeHotcue.prototype = Object.create(components.ComponentContainer.prototype);
 
-NumarkPartyMix.ModeLoop = function(deckNumber) {
+NumarkPartyMix.ModeLoop = function (channel, currentDeck) {
     components.ComponentContainer.call(this);
 
     this.control = NumarkPartyMix.PadModeControls.AUTOLOOP;
 
-    this.connections = new components.ComponentContainer({outConnect: false});
+    this.connections = new components.ComponentContainer({ outConnect: false });
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.Button({
-            group: "[Channel" + deckNumber + "]",
-            midi: [0x93 + deckNumber, 0x14 + i],
+            group: currentDeck,
+            midi: [0x94 + channel, 0x14 + i],
             size: NumarkPartyMix.autoLoopSizes[i],
             inKey: "beatloop_" + NumarkPartyMix.autoLoopSizes[i] + "_toggle",
             outKey: "beatloop_" + NumarkPartyMix.autoLoopSizes[i] + "_enabled",
@@ -280,18 +281,25 @@ NumarkPartyMix.ModeLoop = function(deckNumber) {
 };
 NumarkPartyMix.ModeLoop.prototype = Object.create(components.ComponentContainer.prototype);
 
-NumarkPartyMix.ModeSampler = function(deckNumber) {
+NumarkPartyMix.ModeSampler = function (channel, currentDeck) {
     components.ComponentContainer.call(this);
     this.control = NumarkPartyMix.PadModeControls.SAMPLER;
-    var sampleoffset = (deckNumber - 1)*4;
-    this.connections = new components.ComponentContainer({outConnect: false});
+    var sampleoffset = channel * 4;
+    this.connections = new components.ComponentContainer({ outConnect: false });
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.SamplerButton({
-            midi: [0x93 + deckNumber, 0x14 + i],
+            group: currentDeck,
+            midi: [0x94 + channel, 0x14 + i],
             number: 1 + i + sampleoffset,
             unshift: null,
             outKey: "play_indicator",
-            input: function(channel, control, value, status, _group) {
+            input: function (channel, control, value, status, group) {
+                print("sampler")
+                print(this.group)
+                print(group)
+                this.number = (((script.deckFromGroup(group) - 1) * 4) + control - 19)
+                this.group = "[Sampler" + this.number + "]";
+                print(this.group)
                 if (this.isPress(channel, control, value, status)) {
                     if (engine.getValue(this.group, "track_loaded") === 0) {
                         engine.setValue(this.group, "LoadSelectedTrack", 1);
@@ -309,49 +317,60 @@ NumarkPartyMix.ModeSampler = function(deckNumber) {
 };
 NumarkPartyMix.ModeSampler.prototype = Object.create(components.ComponentContainer.prototype);
 
-NumarkPartyMix.ModeEFX = function(deckNumber) {
+NumarkPartyMix.ModeEFX = function (channel, currentDeck) {
     components.ComponentContainer.call(this);
 
     this.control = NumarkPartyMix.PadModeControls.EFX;
 
     var fx = [
-        "[EffectRack1_EffectUnit" + deckNumber + "_Effect1]",
-        "[EffectRack1_EffectUnit" + deckNumber + "_Effect2]",
-        "[EffectRack1_EffectUnit" + deckNumber + "_Effect3]"
+        "_Effect1]",
+        "_Effect2]",
+        "_Effect3]"
     ];
 
-    this.connections = new components.ComponentContainer({outConnect: false});
+    this.connections = new components.ComponentContainer({ outConnect: false });
     var p = this.connections;
 
-    fx.forEach(function(fx, i) {
+    fx.forEach(function (fx, i) {
         p[i] = new components.Button({
-            midi: [0x93 + deckNumber, 0x14 + i],
-            group: fx,
+            group: "[EffectRack1_EffectUnit" + script.deckFromGroup(currentDeck) + fx,
+            midi: [0x94 + channel, 0x14 + i],
             key: "meta",
         });
     });
     p[3] = new components.Button({
-        midi: [0x93 + deckNumber, 0x17],
+        midi: [0x94 + channel, 0x17],
         type: components.Button.prototype.types.toggle,
-        group: "[EffectRack1_EffectUnit" + deckNumber + "]",
+        group: "[EffectRack1_EffectUnit" + script.deckFromGroup(currentDeck) + "]",
         inKey: "mix_mode",
         outKey: "mix_mode",
-        output: function() {
-            if (engine.getParameter("[EffectRack1_EffectUnit" + deckNumber + "]", "mix_mode") === 0) {
-                midi.sendShortMsg(0x93 + deckNumber, 0x17, 0x7F);
+        output: function () {
+            if (engine.getParameter("[EffectRack1_EffectUnit" + script.deckFromGroup(currentDeck) + "]", "mix_mode") === 0) {
+                midi.sendShortMsg(0x94 + channel, 0x17, 0x7F);
             } else {
-                midi.sendShortMsg(0x83 + deckNumber, 0x17, 0x01);
+                midi.sendShortMsg(0x84 + channel, 0x17, 0x01);
             }
         },
     });
 };
 NumarkPartyMix.ModeEFX.prototype = Object.create(components.ComponentContainer.prototype);
 
-NumarkPartyMix.Browse = function() {
+NumarkPartyMix.Browse = function () {
+    this.switchDeck = new components.Button({
+        input: function (_channel, control, _value, _status, _group) {
+            NumarkPartyMix.deck[control - 2].toggle()
+            // really bad way to switch the scratch light with the deck
+            NumarkPartyMix.deck[control - 2].scratchToggle.output()
+            var d = script.deckFromGroup(NumarkPartyMix.deck[control - 2].currentDeck)
+            midi.sendShortMsg(0xb0, 0x42+((d)%2), d>2 ? 0x08 : 0);//use party light as indicator
+            NumarkPartyMix.deck[control - 2].padSection.group = NumarkPartyMix.deck[control - 2].currentDeck
+        }
+    });
+
     var pressturn = false;
 
     this.knob = new components.Encoder({
-        input: function(channel, control, value) {
+        input: function (channel, control, value) {
             var direction;
             if (pressturn) {
                 if (value > 0x40) {
@@ -370,12 +389,12 @@ NumarkPartyMix.Browse = function() {
         group: "[Library]",
         type: components.Button.prototype.types.powerWindow,
         isLongPressed: false,
-        input: function(channel, control, value, status) {
+        input: function (channel, control, value, status) {
             pressturn = this.isPress(channel, control, value, status);
             if (pressturn) {
                 this.inToggle();
                 this.isLongPressed = false;
-                this.longPressTimer = engine.beginTimer(this.longPressTimeout, function() {
+                this.longPressTimer = engine.beginTimer(this.longPressTimeout, function () {
                     this.isLongPressed = true;
                     this.longPressTimer = 0;
                 }, true);
@@ -388,8 +407,8 @@ NumarkPartyMix.Browse = function() {
                 this.isLongPressed = false;
             }
         },
-        inToggle: function() {
-            if (! (pressturn || this.isLongPressed)) {
+        inToggle: function () {
+            if (!(pressturn || this.isLongPressed)) {
                 engine.setParameter("[Library]", "GoToItem", 1);
             }
         }
@@ -397,7 +416,7 @@ NumarkPartyMix.Browse = function() {
 };
 NumarkPartyMix.Browse.prototype = new components.ComponentContainer();
 
-NumarkPartyMix.Gains = function() {
+NumarkPartyMix.Gains = function () {
     this.mainGain = new components.Pot({
         group: "[Master]",
         inKey: "gain"

@@ -18,3 +18,5 @@ Put the .xml and the .js files in the user controller mapping folder or the syst
 
 Numark-Party-Mix - original mapping (should be removed after merge in mixxx project)
 
+Numark-Party-Mix-TMB - Instead of Gain Treble Bass the 3 Knobs are used for Treble Middle Bass
+

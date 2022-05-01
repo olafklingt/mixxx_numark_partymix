@@ -127,6 +127,11 @@ NumarkPartyMix.Deck = function(deckNumber) {
         inKey: "parameter3"
     });
 
+    this.middle = new components.Pot({
+        group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
+        inKey: "parameter2"
+    });
+    
     this.bass = new components.Pot({
         group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
         inKey: "parameter1"

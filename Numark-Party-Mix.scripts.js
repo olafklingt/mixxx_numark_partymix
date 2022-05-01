@@ -41,7 +41,7 @@ NumarkPartyMix.init = function(_id, _debugging) {
     midi.sendShortMsg(0x81, 0x1B, 0x00);
 
     // initialize component containers
-    NumarkPartyMix.deck = new components.ComponentContainer();
+    NumarkPartyMix.deck = new components.ComponentContainer({outConnect: false});
     for (var i = 0; i < 2; i++) {
         NumarkPartyMix.deck[i] = new NumarkPartyMix.Deck(i + 1);
     }
@@ -223,15 +223,6 @@ NumarkPartyMix.PadSection = function(deckNumber) {
     this.modes[NumarkPartyMix.PadModeControls.EFX] = new NumarkPartyMix.ModeEFX(deckNumber);
 
     this.modeButtonPress = function(channel, control, _value) {
-        this.setMode(channel, control);
-    };
-
-    this.padPress = function(channel, control, value, status, group) {
-        var i = (control - 0x14) % 8;
-        this.currentMode.connections[i].input(channel, control, value, status, group);
-    };
-
-    this.setMode = function(_channel, control) {
         var newMode = this.modes[control];
         this.currentMode.forEachComponent(function(component) {
             component.disconnect();
@@ -245,6 +236,11 @@ NumarkPartyMix.PadSection = function(deckNumber) {
         this.currentMode = newMode;
     };
 
+    this.padPress = function(channel, control, value, status, group) {
+        var i = (control - 0x14) % 8;
+        this.currentMode.connections[i].input(channel, control, value, status, group);
+    };
+
     this.currentMode = this.modes[NumarkPartyMix.PadModeControls.HOTCUE];
 };
 NumarkPartyMix.PadSection.prototype = Object.create(components.ComponentContainer.prototype);
@@ -255,13 +251,12 @@ NumarkPartyMix.ModeHotcue = function(deckNumber) {
 
     this.control = NumarkPartyMix.PadModeControls.HOTCUE;
 
-    this.connections = new components.ComponentContainer();
+    this.connections = new components.ComponentContainer({outConnect: false});
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.HotcueButton({
             group: "[Channel" + deckNumber + "]",
             midi: [0x93 + deckNumber, 0x14 + i],
             number: i + 1,
-            outConnect: false
         });
     }
 };
@@ -272,7 +267,7 @@ NumarkPartyMix.ModeLoop = function(deckNumber) {
 
     this.control = NumarkPartyMix.PadModeControls.AUTOLOOP;
 
-    this.connections = new components.ComponentContainer();
+    this.connections = new components.ComponentContainer({outConnect: false});
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.Button({
             group: "[Channel" + deckNumber + "]",
@@ -280,7 +275,6 @@ NumarkPartyMix.ModeLoop = function(deckNumber) {
             size: NumarkPartyMix.autoLoopSizes[i],
             inKey: "beatloop_" + NumarkPartyMix.autoLoopSizes[i] + "_toggle",
             outKey: "beatloop_" + NumarkPartyMix.autoLoopSizes[i] + "_enabled",
-            outConnect: false
         });
     }
 };
@@ -290,12 +284,11 @@ NumarkPartyMix.ModeSampler = function(deckNumber) {
     components.ComponentContainer.call(this);
     this.control = NumarkPartyMix.PadModeControls.SAMPLER;
     var sampleoffset = (deckNumber - 1)*4;
-    this.connections = new components.ComponentContainer();
+    this.connections = new components.ComponentContainer({outConnect: false});
     for (var i = 0; i < 4; i++) {
         this.connections[i] = new components.SamplerButton({
             midi: [0x93 + deckNumber, 0x14 + i],
             number: 1 + i + sampleoffset,
-            outConnect: false,
             unshift: null,
             outKey: "play_indicator",
             input: function(channel, control, value, status, _group) {
@@ -327,16 +320,14 @@ NumarkPartyMix.ModeEFX = function(deckNumber) {
         "[EffectRack1_EffectUnit" + deckNumber + "_Effect3]"
     ];
 
-    this.connections = new components.ComponentContainer();
+    this.connections = new components.ComponentContainer({outConnect: false});
     var p = this.connections;
 
     fx.forEach(function(fx, i) {
         p[i] = new components.Button({
             midi: [0x93 + deckNumber, 0x14 + i],
             group: fx,
-            inKey: "enabled",
-            outKey: "enabled",
-            outConnect: false
+            key: "meta",
         });
     });
     p[3] = new components.Button({
@@ -352,7 +343,6 @@ NumarkPartyMix.ModeEFX = function(deckNumber) {
                 midi.sendShortMsg(0x83 + deckNumber, 0x17, 0x01);
             }
         },
-        outConnect: false
     });
 };
 NumarkPartyMix.ModeEFX.prototype = Object.create(components.ComponentContainer.prototype);

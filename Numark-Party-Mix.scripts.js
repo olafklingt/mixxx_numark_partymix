@@ -131,10 +131,15 @@ NumarkPartyMix.Deck = function(deckNumber) {
         group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
         inKey: "parameter2"
     });
-    
+
     this.bass = new components.Pot({
         group: "[EqualizerRack1_" + this.currentDeck + "_Effect1]",
         inKey: "parameter1"
+    });
+
+    this.quickEffect = new components.Pot({
+        group: "[QuickEffectRack1_" + this.currentDeck + "]",
+        inKey: "super1"
     });
 
     this.pitch = new components.Pot({
